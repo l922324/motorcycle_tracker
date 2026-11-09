@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#1a1a2e">
+  <title>Bike Tracker</title>
+  <link rel="manifest" href="manifest.json">
+  <!-- Home Screen / PWA: place your square PNG at icons/app-icon.png -->
+  <link rel="apple-touch-icon" href="icons/app-icon.png" sizes="180x180">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <!-- Bottom nav -->
+  <nav class="bottom-nav">
+    <button type="button" class="nav-btn active" data-screen="home" aria-label="Home">
+      <span class="nav-icon nav-icon-svg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 17h14v-5H5v5z"/><path d="M5 12V7l7-4 7 4v5"/><circle cx="12" cy="12" r="1.5"/></svg></span>
+      <span class="nav-label">Bike</span>
+    </button>
+    <button type="button" class="nav-btn" data-screen="patrol" aria-label="Fuel">
+      <span class="nav-icon nav-icon-svg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V9l7-6 7 6v12"/><path d="M9 21v-6h6v6"/><path d="M9 9h.01"/><path d="M15 9h.01"/></svg></span>
+      <span class="nav-label">Fuel</span>
+    </button>
+    <button type="button" class="nav-btn" data-screen="servicing" aria-label="Servicing">
+      <span class="nav-icon nav-icon-svg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg></span>
+      <span class="nav-label">Servicing</span>
+    </button>
+  </nav>
+
+  <main class="app-main">
+    <!-- ========== HOME (Bike) ========== -->
+    <section id="screen-home" class="screen active">
+      <header class="screen-header">
+        <h1>My bikes</h1>
+      </header>
+      <div class="bike-picker" id="bike-picker">
+        <label class="bike-picker-label" for="bike-selector">Active bike</label>
+        <select id="bike-selector" class="bike-selector" aria-label="Select bike"></select>
+        <div class="bike-picker-actions">
+          <button type="button" class="btn btn-primary" id="btn-add-bike">+ Add bike</button>
+          <button type="button" class="btn btn-ghost" id="btn-delete-bike">Delete bike</button>
+        </div>
+      </div>
+      <div class="bike-card" id="bike-card">
+        <div class="bike-placeholder" id="bike-placeholder">
+          <p>No bikes yet. Tap “+ Add bike” to enter details or import a JSON file.</p>
+        </div>
+        <div class="bike-details hidden" id="bike-details">
+          <h2 id="bike-name-display">—</h2>
+          <p class="bike-model" id="bike-model-display">—</p>
+          <dl class="bike-specs">
+            <dt>Purchase date</dt><dd id="bike-purchase-date">—</dd>
+            <dt>Chassis no.</dt><dd id="bike-chassis">—</dd>
+            <dt>Engine no.</dt><dd id="bike-engine">—</dd>
+            <dt>Current mileage</dt><dd id="bike-mileage">—</dd>
+            <dt>OBU number</dt><dd id="bike-obu">—</dd>
+            <dt>Vehicle no.</dt><dd id="bike-vehicle-no">—</dd>
+            <dt>Road tax expiry</dt><dd id="bike-roadtax-expiry">—</dd>
+            <dt>COE expiry</dt><dd id="bike-coe-expiry">—</dd>
+          </dl>
+          <div class="bike-block">
+            <h3 class="bike-block-title">Insurance</h3>
+            <dl class="bike-specs">
+              <dt>Company</dt><dd id="bike-insurance-company">—</dd>
+              <dt>Policy no.</dt><dd id="bike-insurance-policy">—</dd>
+              <dt>Policy period</dt><dd id="bike-insurance-period">—</dd>
+            </dl>
+          </div>
+          <div class="bike-block">
+            <h3 class="bike-block-title">Documents</h3>
+            <ul class="doc-list" id="bike-doc-links"></ul>
+          </div>
+          <button type="button" class="btn btn-secondary edit-bike-btn">Edit</button>
+          <button type="button" class="btn btn-ghost" id="btn-backup">Backup / restore</button>
+        </div>
+      </div>
+      <footer class="app-meta hidden" id="app-meta" aria-label="App information">
+        <p class="app-meta-line" id="app-meta-version"></p>
+        <p class="app-meta-line" id="app-meta-release"></p>
+        <p class="app-meta-line" id="app-meta-maintainer"></p>
+      </footer>
+      <!-- Add bike: manual vs JSON -->
+      <div class="modal hidden" id="modal-add-bike">
+        <div class="modal-content">
+          <h2>Add bike</h2>
+          <p class="hint">Enter details in the form, or import a backup-style JSON file (one or more bikes with fuel / service / parts).</p>
+          <div class="add-bike-actions">
+            <button type="button" class="btn btn-primary" id="btn-add-bike-manual">Enter details manually</button>
+            <button type="button" class="btn btn-secondary" id="btn-add-bike-json">Import from JSON file</button>
+          </div>
+          <input type="file" id="add-bike-json-input" accept=".json,application/json" class="file-input visually-hidden" aria-label="Choose JSON file">
+          <div class="form-actions">
+            <button type="button" class="btn btn-ghost modal-cancel">Cancel</button>
+          </div>
+        </div>
+      </div>
+      <!-- Bike edit form (modal) -->
+      <div class="modal hidden" id="modal-bike">
+        <div class="modal-content">
+          <h2>Bike details</h2>
+          <form id="form-bike">
+            <input type="hidden" name="bikeId" id="form-bike-id" value="">
+            <label>Bike name / nickname</label>
+            <input type="text" name="name" placeholder="e.g. My bike">
+            <label>Model</label>
+            <input type="text" name="model" placeholder="e.g. CF Moto SC150">
+            <label>Engine (cc)</label>
+            <input type="number" name="engineCc" placeholder="149" min="1">
+            <label>Manufactured date</label>
+            <input type="date" name="manufacturedDate">
+            <label>Purchase date</label>
+            <input type="date" name="purchaseDate">
+            <label>Chassis number</label>
+            <input type="text" name="chassisNumber" placeholder="Chassis no.">
+            <label>Engine number</label>
+            <input type="text" name="engineNumber" placeholder="Engine no.">
+            <label>Current mileage (km)</label>
+            <input type="number" name="mileage" placeholder="0" min="0" step="1">
+            <label>OBU number</label>
+            <input type="text" name="obuNumber" placeholder="e.g. OBU serial">
+            <label>Vehicle no.</label>
+            <input type="text" name="vehicleNo" placeholder="e.g. SBA 1234 A">
+            <label>Road tax expiry</label>
+            <input type="date" name="roadTaxExpiryDate">
+            <label>COE expiry</label>
+            <input type="date" name="coeExpiry">
+            <h3 class="form-section">Insurance</h3>
+            <label>Insurance company</label>
+            <input type="text" name="insuranceCompany" placeholder="e.g. ABC Insurance">
+            <label>Policy number</label>
+            <input type="text" name="insurancePolicyNumber" placeholder="Policy no.">
+            <label>Policy period start</label>
+            <input type="date" name="insurancePeriodStart">
+            <label>Policy period end</label>
+            <input type="date" name="insurancePeriodEnd">
+            <h3 class="form-section">Documents</h3>
+            <label>Upload documents</label>
+            <input type="file" name="docs" accept=".pdf,.jpg,.jpeg,.png" class="file-input" multiple>
+            <span class="file-name" id="docs-selected-name"></span>
+            <div class="form-actions">
+              <button type="button" class="btn btn-ghost modal-cancel">Cancel</button>
+              <button type="submit" class="btn btn-primary">Save</button>
+            </div>
+          </form>
+        </div>
+      </div>
+      <!-- Backup / restore modal -->
+      <div class="modal hidden" id="modal-backup">
+        <div class="modal-content">
+          <h2>Backup / restore</h2>
+          <p class="hint">Use Export to download a backup file (.json). On another device or Home Screen app, use Import to load that file.</p>
+          <div class="form-section">
+            <strong class="fuel-analytics-label">Export</strong>
+            <button type="button" class="btn btn-secondary" id="btn-backup-export">Download backup (.json)</button>
+          </div>
+          <div class="form-section" style="margin-top:16px">
+            <strong class="fuel-analytics-label">Import</strong>
+            <input type="file" id="backup-file-input" accept=".json" class="file-input">
+          </div>
+          <div class="form-actions">
+            <button type="button" class="btn btn-ghost modal-cancel">Close</button>
+            <button type="button" class="btn btn-primary" id="btn-backup-import">Import</button>
+          </div>
+        </div>
+      </div>
+      <!-- Document viewer modal -->
+      <div class="modal hidden" id="modal-doc">
+        <div class="modal-content">
+          <h2 id="doc-modal-title">Document</h2>
+          <div class="doc-viewer" id="doc-viewer"></div>
+          <div class="form-actions">
+            <button type="button" class="btn btn-ghost modal-cancel">Close</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== PATROL (Fuel) ========== -->
+    <section id="screen-patrol" class="screen">
+      <header class="screen-header">
+        <h1>Fuel history</h1>
+        <button type="button" class="btn btn-primary" id="btn-add-fuel">+ Add fill-up</button>
+      </header>
+      <p class="hint screen-active-bike" id="context-fuel-bike"></p>
+      <div class="fuel-analytics" id="fuel-analytics">
+        <div class="fuel-analytics-summary">
+          <div>
+            <div class="fuel-analytics-label">Avg. fuel efficiency</div>
+            <div class="fuel-analytics-value" id="fuel-avg-efficiency">—</div>
+          </div>
+          <div>
+            <div class="fuel-analytics-label">Avg. fuel usage</div>
+            <div class="fuel-analytics-value" id="fuel-avg-usage">—</div>
+          </div>
+          <div>
+            <div class="fuel-analytics-label">Avg. monthly fuel cost</div>
+            <div class="fuel-analytics-value" id="fuel-avg-monthly">—</div>
+          </div>
+          <div>
+            <div class="fuel-analytics-label">Total fuel cost</div>
+            <div class="fuel-analytics-value" id="fuel-total-spent">—</div>
+          </div>
+        </div>
+      </div>
+      <ul class="list list-with-actions" id="fuel-list"></ul>
+      <!-- Add/Edit fuel modal -->
+      <div class="modal hidden" id="modal-fuel">
+        <div class="modal-content">
+          <h2 id="fuel-modal-title">Add fill-up</h2>
+          <form id="form-fuel">
+            <input type="hidden" name="id" value="">
+            <label>Date</label>
+            <input type="date" name="date" required>
+            <label>Litres</label>
+            <input type="number" name="litres" placeholder="0.00" min="0" step="0.01" required>
+            <label>Mileage at fill (km, optional)</label>
+            <input type="number" name="mileage" placeholder="e.g. 12345" min="0" step="1">
+            <label>Fuel grade (e.g. 92, 95, 98)</label>
+            <input type="text" name="grade" placeholder="#95">
+            <label>Station / location</label>
+            <input type="text" name="station" placeholder="e.g. Shell Jurong">
+            <label>Price per litre (optional)</label>
+            <input type="number" name="pricePerLitre" placeholder="0.00" min="0" step="0.01">
+            <label>Original price (optional)</label>
+            <input type="number" name="originalPrice" placeholder="0.00" min="0" step="0.01">
+            <label>Paid price (optional)</label>
+            <input type="number" name="totalPrice" placeholder="0.00" min="0" step="0.01">
+            <div class="form-actions">
+              <button type="button" class="btn btn-ghost modal-cancel">Cancel</button>
+              <button type="submit" class="btn btn-primary">Save</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== SERVICING ========== -->
+    <section id="screen-servicing" class="screen">
+      <header class="screen-header">
+        <h1>Servicing</h1>
+        <button type="button" class="btn btn-primary" id="btn-add-service">+ Add service</button>
+      </header>
+      <p class="hint screen-active-bike" id="context-service-bike"></p>
+      <div class="tabs">
+        <button type="button" class="tab active" data-tab="parts">Parts</button>
+        <button type="button" class="tab" data-tab="history">History</button>
+      </div>
+      <!-- Parts list -->
+      <div class="tab-panel active" id="tab-parts">
+        <div class="parts-tab-header">
+          <p class="hint">Tap a part for details. Add custom parts below.</p>
+          <button type="button" class="btn btn-secondary" id="btn-add-part">+ Add part</button>
+        </div>
+        <ul class="parts-list" id="parts-list"></ul>
+      </div>
+      <!-- Service history -->
+      <div class="tab-panel" id="tab-history">
+        <ul class="list list-with-actions" id="service-list"></ul>
+      </div>
+      <!-- Add/Edit service modal -->
+      <div class="modal hidden" id="modal-service">
+        <div class="modal-content">
+          <h2 id="service-modal-title">Add service record</h2>
+          <form id="form-service">
+            <input type="hidden" name="id" value="">
+            <label>Date</label>
+            <input type="date" name="date" required>
+            <label>Location / workshop</label>
+            <input type="text" name="location" placeholder="e.g. Bike shop ABC">
+            <label>Price (optional)</label>
+            <input type="number" name="price" placeholder="0.00" min="0" step="0.01">
+            <label>Mileage at service (km)</label>
+            <input type="number" name="mileage" placeholder="Current bike mileage" min="0">
+            <label>Content / notes</label>
+            <textarea name="content" rows="3" placeholder="What was done..."></textarea>
+            <div class="form-actions">
+              <button type="button" class="btn btn-ghost modal-cancel">Cancel</button>
+              <button type="submit" class="btn btn-primary">Save</button>
+            </div>
+          </form>
+        </div>
+      </div>
+      <!-- Part detail modal -->
+      <div class="modal hidden" id="modal-part">
+        <div class="modal-content">
+          <h2 id="part-detail-name">Part</h2>
+          <dl class="part-detail-specs">
+            <dt>Last changed</dt><dd id="part-detail-last">—</dd>
+            <dt>Mileage when changed</dt><dd id="part-detail-mileage">—</dd>
+            <dt>Next target (mileage)</dt><dd id="part-detail-next-mileage">—</dd>
+            <dt>Next target (date)</dt><dd id="part-detail-next-date">—</dd>
+          </dl>
+          <div class="progress-wrap">
+            <label>Progress to next change</label>
+            <div class="progress-bar"><div class="progress-fill" id="part-detail-progress"></div></div>
+            <span class="progress-text" id="part-detail-progress-text"></span>
+          </div>
+          <div class="form-actions form-actions-wrap">
+            <button type="button" class="btn btn-ghost modal-cancel">Close</button>
+            <button type="button" class="btn btn-secondary" id="btn-edit-part-cycle">Edit name &amp; cycle</button>
+            <button type="button" class="btn btn-secondary" id="btn-edit-part-last">Edit last change</button>
+            <button type="button" class="btn btn-primary" id="btn-reset-part">Mark as changed (reset)</button>
+            <button type="button" class="btn btn-ghost" id="btn-delete-part">Delete part</button>
+          </div>
+        </div>
+      </div>
+      <!-- Part reset / Edit last change modal -->
+      <div class="modal hidden" id="modal-part-change">
+        <div class="modal-content">
+          <h2 id="part-change-modal-title">Part change</h2>
+          <form id="form-part-change">
+            <label>Date changed</label>
+            <input type="date" name="dateChanged" required>
+            <label>Mileage when changed (km)</label>
+            <input type="number" name="mileageChanged" placeholder="Optional" min="0" step="1">
+            <div class="form-actions">
+              <button type="button" class="btn btn-ghost modal-cancel">Cancel</button>
+              <button type="submit" class="btn btn-primary">Save</button>
+            </div>
+          </form>
+        </div>
+      </div>
+      <!-- Part edit cycle modal -->
+      <div class="modal hidden" id="modal-part-cycle">
+        <div class="modal-content">
+          <h2 id="part-cycle-modal-title">Edit part</h2>
+          <form id="form-part-cycle">
+            <label>Part name</label>
+            <input type="text" name="partName" placeholder="e.g. Engine oil">
+            <label>Cycle (km) – 0 to use time only</label>
+            <input type="number" name="cycleKm" placeholder="e.g. 3000" min="0" step="1">
+            <label>Cycle (months) – 0 to use mileage only</label>
+            <input type="number" name="cycleMonths" placeholder="e.g. 6" min="0" step="1">
+            <div class="form-actions">
+              <button type="button" class="btn btn-ghost modal-cancel">Cancel</button>
+              <button type="submit" class="btn btn-primary">Save</button>
+            </div>
+          </form>
+        </div>
+      </div>
+      <!-- Add new part modal -->
+      <div class="modal hidden" id="modal-part-add">
+        <div class="modal-content">
+          <h2>Add part</h2>
+          <form id="form-part-add">
+            <label>Part name</label>
+            <input type="text" name="partName" placeholder="e.g. Engine oil" required>
+            <label>Cycle (km) – 0 for time only</label>
+            <input type="number" name="cycleKm" placeholder="e.g. 3000" min="0" step="1" value="0">
+            <label>Cycle (months) – 0 for mileage only</label>
+            <input type="number" name="cycleMonths" placeholder="e.g. 6" min="0" step="1" value="0">
+            <div class="form-actions">
+              <button type="button" class="btn btn-ghost modal-cancel">Cancel</button>
+              <button type="submit" class="btn btn-primary">Add</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Reminder toasts -->
+  <div class="toast hidden" id="reminder-toast">
+    <span class="toast-icon">⚠️</span>
+    <div class="toast-body">
+      <strong>Part due soon</strong>
+      <p id="reminder-text"></p>
+    </div>
+    <button type="button" class="toast-dismiss" id="reminder-toast-dismiss" aria-label="Dismiss">×</button>
+  </div>
+  <div class="toast hidden" id="roadtax-toast">
+    <span class="toast-icon">📋</span>
+    <div>
+      <strong>Road tax due soon</strong>
+      <p id="roadtax-text"></p>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
